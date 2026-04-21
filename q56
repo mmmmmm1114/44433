@@ -1,1 +1,1702 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZONE - S.T.A.L.K.E.R. Survival RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a0a;
+            color: #c8c8c8;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 1200px;
+            height: 800px;
+            background: #000;
+            border: 2px solid #333;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1);
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            image-rendering: pixelated;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #hud {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 180px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #444;
+            display: grid;
+            grid-template-columns: 250px 1fr 300px;
+            gap: 10px;
+            padding: 10px;
+            pointer-events: auto;
+        }
+        
+        .hud-panel {
+            border: 1px solid #333;
+            padding: 8px;
+            background: rgba(20, 20, 20, 0.9);
+        }
+        
+        .hud-title {
+            color: #8b7355;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 4px;
+        }
+        
+        .stat-bar {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+            font-size: 11px;
+        }
+        
+        .stat-label {
+            width: 80px;
+            color: #666;
+        }
+        
+        .stat-value {
+            flex: 1;
+            height: 14px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        
+        .health-fill { background: #8b0000; }
+        .rad-fill { background: #39ff14; }
+        .hunger-fill { background: #8b6914; }
+        .stamina-fill { background: #1e90ff; }
+        
+        #inventory {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 700px;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #555;
+            display: none;
+            grid-template-rows: 40px 1fr;
+            pointer-events: auto;
+            z-index: 20;
+        }
+        
+        #inventory-header {
+            background: #1a1a1a;
+            border-bottom: 1px solid #444;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            justify-content: space-between;
+        }
+        
+        #inventory-grid {
+            display: grid;
+            grid-template-columns: 1fr 250px;
+            gap: 10px;
+            padding: 10px;
+        }
+        
+        .inv-section {
+            border: 1px solid #333;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        
+        .item-slot {
+            width: 50px;
+            height: 50px;
+            border: 1px solid #444;
+            background: rgba(30, 30, 30, 0.8);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 2px;
+            cursor: pointer;
+            position: relative;
+            font-size: 20px;
+        }
+        
+        .item-slot:hover {
+            border-color: #8b7355;
+            background: rgba(50, 50, 50, 0.9);
+        }
+        
+        .item-count {
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 10px;
+            color: #aaa;
+        }
+        
+        #pda {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 450px;
+            background: rgba(0, 20, 0, 0.95);
+            border: 2px solid #39ff14;
+            display: none;
+            pointer-events: auto;
+            z-index: 20;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #pda-screen {
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        .pda-header {
+            color: #39ff14;
+            border-bottom: 1px solid #39ff14;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .quest-item {
+            background: rgba(0, 50, 0, 0.5);
+            border: 1px solid #39ff14;
+            padding: 10px;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+        
+        .quest-item:hover {
+            background: rgba(0, 80, 0, 0.6);
+        }
+        
+        #dialogue {
+            position: absolute;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 600px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #8b7355;
+            padding: 20px;
+            display: none;
+            pointer-events: auto;
+            z-index: 15;
+        }
+        
+        .dialogue-text {
+            color: #c8c8c8;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+        
+        .dialogue-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .dialogue-option {
+            background: rgba(50, 50, 50, 0.8);
+            border: 1px solid #555;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #8b7355;
+            transition: all 0.2s;
+        }
+        
+        .dialogue-option:hover {
+            background: rgba(80, 80, 80, 0.9);
+            border-color: #8b7355;
+        }
+        
+        #message-log {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            pointer-events: none;
+        }
+        
+        .message {
+            background: rgba(0, 0, 0, 0.7);
+            border-left: 3px solid #555;
+            padding: 5px 10px;
+            margin: 2px 0;
+            font-size: 11px;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        #geiger-counter {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: #39ff14;
+            text-shadow: 0 0 10px #39ff14;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #compass {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            width: 60px;
+            height: 60px;
+            border: 2px solid #444;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        #time-display {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 15px;
+            border: 1px solid #444;
+            font-size: 14px;
+        }
+        
+        #death-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        #death-screen h1 {
+            color: #8b0000;
+            font-size: 48px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+        }
+        
+        #start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+        
+        #start-screen h1 {
+            color: #8b7355;
+            font-size: 64px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 15px;
+            text-shadow: 0 0 20px rgba(139, 115, 85, 0.5);
+        }
+        
+        #start-screen p {
+            color: #555;
+            font-size: 14px;
+            margin-bottom: 40px;
+            letter-spacing: 3px;
+        }
+        
+        .btn {
+            background: transparent;
+            border: 2px solid #8b7355;
+            color: #8b7355;
+            padding: 15px 40px;
+            font-size: 16px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .btn:hover {
+            background: #8b7355;
+            color: #000;
+            box-shadow: 0 0 20px rgba(139, 115, 85, 0.5);
+        }
+        
+        #controls-hint {
+            position: absolute;
+            bottom: 10px;
+            color: #444;
+            font-size: 11px;
+            text-align: center;
+            width: 100%;
+        }
+        
+        .anomaly-warning {
+            position: absolute;
+            top: 120px;
+            left: 10px;
+            color: #ff6600;
+            font-size: 14px;
+            animation: pulse 1s infinite;
+            display: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        #faction-indicator {
+            position: absolute;
+            top: 10px;
+            right: 320px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border: 1px solid;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+        
+        <div id="ui">
+            <div id="geiger-counter">0.00 μSv</div>
+            <div id="compass">N</div>
+            <div id="time-display">Day 1 - 06:00</div>
+            <div id="faction-indicator">Loner</div>
+            <div id="anomaly-warning">⚠ ANOMALY DETECTED</div>
+            
+            <div id="message-log"></div>
+            
+            <div id="hud">
+                <div class="hud-panel">
+                    <div class="hud-title">Vitals</div>
+                    <div class="stat-bar">
+                        <span class="stat-label">Health</span>
+                        <div class="stat-value"><div class="stat-fill health-fill" id="health-bar" style="width: 100%"></div></div>
+                    </div>
+                    <div class="stat-bar">
+                        <span class="stat-label">Radiation</span>
+                        <div class="stat-value"><div class="stat-fill rad-fill" id="rad-bar" style="width: 0%"></div></div>
+                    </div>
+                    <div class="stat-bar">
+                        <span class="stat-label">Hunger</span>
+                        <div class="stat-value"><div class="stat-fill hunger-fill" id="hunger-bar" style="width: 0%"></div></div>
+                    </div>
+                    <div class="stat-bar">
+                        <span class="stat-label">Stamina</span>
+                        <div class="stat-value"><div class="stat-fill stamina-fill" id="stamina-bar" style="width: 100%"></div></div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 11px; color: #666;">
+                        Weight: <span id="weight">0</span>/<span id="max-weight">50</span> kg
+                    </div>
+                </div>
+                
+                <div class="hud-panel">
+                    <div class="hud-title">Equipment</div>
+                    <div id="equip-slots" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;">
+                        <div class="item-slot" id="slot-weapon" title="Weapon">🔫</div>
+                        <div class="item-slot" id="slot-armor" title="Armor">🦺</div>
+                        <div class="item-slot" id="slot-helmet" title="Helmet">🪖</div>
+                        <div class="item-slot" id="slot-detector" title="Detector">📡</div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 11px; color: #666;">
+                        Weapon: <span id="weapon-name">None</span><br>
+                        Armor: <span id="armor-name">None</span>
+                    </div>
+                </div>
+                
+                <div class="hud-panel">
+                    <div class="hud-title">Quick Slots</div>
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;">
+                        <div class="item-slot" id="quick-1">1</div>
+                        <div class="item-slot" id="quick-2">2</div>
+                        <div class="item-slot" id="quick-3">3</div>
+                        <div class="item-slot" id="quick-4">4</div>
+                        <div class="item-slot" id="quick-5">5</div>
+                    </div>
+                    <div style="margin-top: 10px; font-size: 10px; color: #444;">
+                        [I] Inventory | [P] PDA | [F] Flashlight | [R] Reload | [E] Interact
+                    </div>
+                </div>
+            </div>
+            
+            <div id="dialogue">
+                <div class="dialogue-text" id="dialogue-text"></div>
+                <div class="dialogue-options" id="dialogue-options"></div>
+            </div>
+        </div>
+        
+        <div id="inventory">
+            <div id="inventory-header">
+                <span style="color: #8b7355;">INVENTORY</span>
+                <span style="color: #666; cursor: pointer;" onclick="toggleInventory()">[X]</span>
+            </div>
+            <div id="inventory-grid">
+                <div class="inv-section" id="inv-items">
+                    <div class="hud-title">Items</div>
+                    <div id="item-grid" style="display: flex; flex-wrap: wrap;"></div>
+                </div>
+                <div class="inv-section">
+                    <div class="hud-title">Item Info</div>
+                    <div id="item-info" style="color: #888; font-size: 12px;">
+                        Select an item to view details
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="pda">
+            <div id="pda-screen">
+                <div class="pda-header">
+                    <h2>S.T.A.L.K.E.R. PDA</h2>
+                    <div style="font-size: 12px; color: #39ff14;">Version 2.1.4 // Clear Sky Network</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 150px 1fr; gap: 20px; height: calc(100% - 80px);">
+                    <div style="border-right: 1px solid #39ff14; padding-right: 10px;">
+                        <div style="color: #39ff14; margin: 10px 0; cursor: pointer;" onclick="showPdaTab('quests')">[ Quests ]</div>
+                        <div style="color: #39ff14; margin: 10px 0; cursor: pointer;" onclick="showPdaTab('map')">[ Map ]</div>
+                        <div style="color: #39ff14; margin: 10px 0; cursor: pointer;" onclick="showPdaTab('factions')">[ Factions ]</div>
+                        <div style="color: #39ff14; margin: 10px 0; cursor: pointer;" onclick="showPdaTab('encyclopedia')">[ Encyclopedia ]</div>
+                    </div>
+                    <div id="pda-content">
+                        <div id="pda-quests"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="death-screen">
+            <h1>You Died</h1>
+            <p id="death-cause" style="color: #666; margin-bottom: 30px;"></p>
+            <button class="btn" onclick="restartGame()">Reincarnate</button>
+        </div>
+        
+        <div id="start-screen">
+            <h1>ZONE</h1>
+            <p>Survival in the Chernobyl Exclusion Zone</p>
+            <button class="btn" onclick="startGame()">Enter the Zone</button>
+            <div id="controls-hint" style="margin-top: 40px;">
+                WASD - Move | Mouse - Aim/Shoot | E - Interact | I - Inventory | P - PDA<br>
+                F - Flashlight | R - Reload | Shift - Sprint | Space - Use Bolt
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GAME ENGINE ====================
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameRunning = false;
+        let lastTime = 0;
+        let gameTime = 6 * 60; // Minutes from midnight (starts at 6:00)
+        let dayCount = 1;
+        
+        // Camera
+        let camera = { x: 0, y: 0 };
+        
+        // World
+        const WORLD_SIZE = 3000;
+        const TILE_SIZE = 40;
+        
+        // Player
+        let player = {
+            x: WORLD_SIZE / 2,
+            y: WORLD_SIZE / 2,
+            angle: 0,
+            health: 100,
+            maxHealth: 100,
+            radiation: 0,
+            hunger: 0,
+            stamina: 100,
+            maxStamina: 100,
+            speed: 2,
+            sprintSpeed: 4,
+            flashlight: false,
+            faction: 'loner',
+            reputation: {
+                loner: 0,
+                duty: 0,
+                freedom: 0,
+                bandit: -20,
+                military: -50
+            },
+            inventory: [],
+            equipment: {
+                weapon: null,
+                armor: null,
+                helmet: null,
+                detector: null
+            },
+            weight: 0,
+            maxWeight: 50,
+            ammo: {
+                '9x18': 50,
+                '5.45x39': 0,
+                '12x70': 0
+            },
+            bolts: 10
+        };
+        
+        // World objects
+        let anomalies = [];
+        let artifacts = [];
+        let npcs = [];
+        let mutants = [];
+        let structures = [];
+        let lootStashes = [];
+        let radiationZones = [];
+        let particles = [];
+        
+        // Input
+        const keys = {};
+        let mouse = { x: 0, y: 0, down: false };
+        
+        // Faction colors
+        const factionColors = {
+            loner: '#8b7355',
+            duty: '#8b0000',
+            freedom: '#006400',
+            bandit: '#4b0082',
+            military: '#2f4f4f'
+        };
+        
+        // ==================== INITIALIZATION ====================
+        function initWorld() {
+            // Generate anomalies
+            for (let i = 0; i < 80; i++) {
+                anomalies.push({
+                    x: Math.random() * WORLD_SIZE,
+                    y: Math.random() * WORLD_SIZE,
+                    type: ['spring', 'vortex', 'burner', 'meatgrinder'][Math.floor(Math.random() * 4)],
+                    radius: 60 + Math.random() * 100,
+                    active: true,
+                    damage: 20 + Math.random() * 30
+                });
+            }
+            
+            // Generate artifacts in anomalies
+            for (let i = 0; i < 30; i++) {
+                const anomaly = anomalies[Math.floor(Math.random() * anomalies.length)];
+                artifacts.push({
+                    x: anomaly.x + (Math.random() - 0.5) * anomaly.radius * 0.5,
+                    y: anomaly.y + (Math.random() - 0.5) * anomaly.radius * 0.5,
+                    type: ['stone_blood', 'night_star', 'mamas_beads', 'soul'][Math.floor(Math.random() * 4)],
+                    value: 1000 + Math.random() * 5000,
+                    name: ['Stone Blood', 'Night Star', "Mama's Beads", 'Soul'][Math.floor(Math.random() * 4)]
+                });
+            }
+            
+            // Generate radiation zones
+            for (let i = 0; i < 20; i++) {
+                radiationZones.push({
+                    x: Math.random() * WORLD_SIZE,
+                    y: Math.random() * WORLD_SIZE,
+                    radius: 150 + Math.random() * 300,
+                    intensity: 0.1 + Math.random() * 0.5
+                });
+            }
+            
+            // Generate structures
+            const structureTypes = ['house', 'barn', 'factory', 'watchtower', 'bunker'];
+            for (let i = 0; i < 40; i++) {
+                structures.push({
+                    x: Math.random() * WORLD_SIZE,
+                    y: Math.random() * WORLD_SIZE,
+                    type: structureTypes[Math.floor(Math.random() * structureTypes.length)],
+                    width: 60 + Math.random() * 100,
+                    height: 60 + Math.random() * 100,
+                    looted: false
+                });
+            }
+            
+            // Generate NPCs
+            const factions = ['loner', 'duty', 'freedom', 'bandit', 'military'];
+            for (let i = 0; i < 50; i++) {
+                const faction = factions[Math.floor(Math.random() * factions.length)];
+                npcs.push({
+                    x: Math.random() * WORLD_SIZE,
+                    y: Math.random() * WORLD_SIZE,
+                    faction: faction,
+                    name: generateName(faction),
+                    health: 100,
+                    dialogues: getDialogues(faction),
+                    schedule: {
+                        patrol: [{x: Math.random() * WORLD_SIZE, y: Math.random() * WORLD_SIZE}],
+                        current: 0
+                    },
+                    alive: true,
+                    attitude: faction === 'bandit' || faction === 'military' ? 'hostile' : 'neutral',
+                    inventory: generateNPCInventory(faction)
+                });
+            }
+            
+            // Generate mutants
+            for (let i = 0; i < 40; i++) {
+                mutants.push({
+                    x: Math.random() * WORLD_SIZE,
+                    y: Math.random() * WORLD_SIZE,
+                    type: ['blind_dog', 'flesh', 'boar', 'pseudo_giant', 'controller'][Math.floor(Math.random() * 5)],
+                    health: 50 + Math.random() * 100,
+                    speed: 1 + Math.random() * 2,
+                    damage: 10 + Math.random() * 20,
+                    active: false,
+                    angle: 0
+                });
+            }
+            
+            // Generate loot stashes
+            for (let i = 0; i < 25; i++) {
+                lootStashes.push({
+                    x: Math.random() * WORLD_SIZE,
+                    y: Math.random() * WORLD_SIZE,
+                    items: generateLoot(),
+                    discovered: false
+                });
+            }
+            
+            // Give player starting items
+            player.inventory = [
+                { type: 'weapon', name: 'PMm Pistol', icon: '🔫', weight: 0.8, ammo: '9x18', mag: 8, condition: 100 },
+                { type: 'consumable', name: 'Bread', icon: '🍞', weight: 0.3, hunger: 15 },
+                { type: 'consumable', name: 'Vodka', icon: '🍶', weight: 0.5, radiation: -20 },
+                { type: 'medical', name: 'Bandage', icon: '🩹', weight: 0.1, heal: 15 },
+                { type: 'armor', name: 'Leather Jacket', icon: '🧥', weight: 2, protection: 10 }
+            ];
+            player.equipment.weapon = player.inventory[0];
+            player.equipment.armor = player.inventory[4];
+            updateWeight();
+        }
+        
+        function generateName(faction) {
+            const names = ['Strelok', 'Sidorovich', 'Wolf', 'Skinflint', 'Barkeep', 'Petrenko', 'Lukash', 'Voronin', 'Freedomer', 'Bandit'];
+            return names[Math.floor(Math.random() * names.length)] + ' (' + faction + ')';
+        }
+        
+        function getDialogues(faction) {
+            return [
+                "The Zone changes everything, stalker.",
+                "Watch your back out there.",
+                "Got any good artifacts to sell?",
+                "Duty protects the world from the Zone's evil.",
+                "Freedom means free access to the Zone!"
+            ];
+        }
+        
+        function generateNPCInventory(faction) {
+            const items = [];
+            if (faction === 'military') {
+                items.push({ type: 'weapon', name: 'AK-74', icon: '🔫', weight: 3.2 });
+            }
+            return items;
+        }
+        
+        function generateLoot() {
+            const possible = [
+                { type: 'consumable', name: 'Canned Food', icon: '🥫', weight: 0.4, hunger: 25 },
+                { type: 'consumable', name: 'Water', icon: '💧', weight: 0.5, thirst: 20 },
+                { type: 'medical', name: 'Medkit', icon: '💊', weight: 0.3, heal: 50 },
+                { type: 'ammo', name: '9x18 Rounds', icon: '🔫', weight: 0.1, count: 20 },
+                { type: 'misc', name: 'PDA', icon: '📱', weight: 0.2 },
+                { type: 'misc', name: 'Document', icon: '📄', weight: 0.1 }
+            ];
+            const count = 1 + Math.floor(Math.random() * 3);
+            const loot = [];
+            for (let i = 0; i < count; i++) {
+                loot.push({...possible[Math.floor(Math.random() * possible.length)]});
+            }
+            return loot;
+        }
+        
+        // ==================== INPUT HANDLING ====================
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'i') toggleInventory();
+            if (e.key.toLowerCase() === 'p') togglePDA();
+            if (e.key.toLowerCase() === 'f') player.flashlight = !player.flashlight;
+            if (e.key.toLowerCase() === ' ') throwBolt();
+            if (e.key.toLowerCase() === 'e') interact();
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('mousedown', () => {
+            mouse.down = true;
+            shoot();
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            mouse.down = false;
+        });
+        
+        // ==================== GAME LOGIC ====================
+        function update(dt) {
+            if (!gameRunning) return;
+            
+            // Time progression
+            gameTime += dt * 0.5; // 30 real seconds = 1 game hour
+            if (gameTime >= 24 * 60) {
+                gameTime = 0;
+                dayCount++;
+            }
+            
+            const isNight = gameTime < 6 * 60 || gameTime > 20 * 60;
+            
+            // Player movement
+            let dx = 0, dy = 0;
+            if (keys['w']) dy -= 1;
+            if (keys['s']) dy += 1;
+            if (keys['a']) dx -= 1;
+            if (keys['d']) dx += 1;
+            
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+            
+            // Sprint
+            let currentSpeed = player.speed;
+            if (keys['shift'] && player.stamina > 0) {
+                currentSpeed = player.sprintSpeed;
+                player.stamina -= 0.5;
+            } else {
+                player.stamina = Math.min(player.maxStamina, player.stamina + 0.2);
+            }
+            
+            // Apply movement
+            player.x += dx * currentSpeed;
+            player.y += dy * currentSpeed;
+            
+            // Clamp to world bounds
+            player.x = Math.max(0, Math.min(WORLD_SIZE, player.x));
+            player.y = Math.max(0, Math.min(WORLD_SIZE, player.y));
+            
+            // Calculate angle to mouse
+            const screenX = player.x - camera.x;
+            const screenY = player.y - camera.y;
+            player.angle = Math.atan2(mouse.y - screenY, mouse.x - screenX);
+            
+            // Camera follow
+            camera.x = player.x - canvas.width / 2;
+            camera.y = player.y - canvas.height / 2;
+            
+            // Radiation calculation
+            let radExposure = 0;
+            for (let zone of radiationZones) {
+                const dist = Math.hypot(player.x - zone.x, player.y - zone.y);
+                if (dist < zone.radius) {
+                    radExposure += zone.intensity * (1 - dist / zone.radius);
+                }
+            }
+            
+            // Armor reduces radiation
+            if (player.equipment.armor) {
+                radExposure *= 0.7;
+            }
+            
+            player.radiation = Math.min(100, player.radiation + radExposure * 0.01);
+            
+            // Radiation damage
+            if (player.radiation > 50) {
+                player.health -= 0.02;
+            }
+            
+            // Hunger
+            player.hunger = Math.min(100, player.hunger + 0.01);
+            if (player.hunger > 80) {
+                player.health -= 0.05;
+                player.stamina -= 0.1;
+            }
+            
+            // Anomaly damage
+            for (let anomaly of anomalies) {
+                const dist = Math.hypot(player.x - anomaly.x, player.y - anomaly.y);
+                if (dist < anomaly.radius && anomaly.active) {
+                    player.health -= anomaly.damage * 0.01;
+                    addMessage("Anomaly damage!", "warning");
+                }
+            }
+            
+            // Mutant AI
+            for (let mutant of mutants) {
+                const dist = Math.hypot(player.x - mutant.x, player.y - mutant.y);
+                
+                // Mutants more active at night
+                const activationRange = isNight ? 400 : 200;
+                
+                if (dist < activationRange) {
+                    mutant.active = true;
+                    const angle = Math.atan2(player.y - mutant.y, player.x - mutant.x);
+                    mutant.x += Math.cos(angle) * mutant.speed;
+                    mutant.y += Math.sin(angle) * mutant.speed;
+                    mutant.angle = angle;
+                    
+                    if (dist < 30) {
+                        player.health -= mutant.damage * 0.05;
+                        addMessage(mutant.type + " attacks!", "danger");
+                    }
+                } else {
+                    mutant.active = false;
+                    // Wander randomly
+                    mutant.x += (Math.random() - 0.5) * 0.5;
+                    mutant.y += (Math.random() - 0.5) * 0.5;
+                }
+            }
+            
+            // NPC AI (A-Life simulation)
+            for (let npc of npcs) {
+                if (!npc.alive) continue;
+                
+                const dist = Math.hypot(player.x - npc.x, player.y - npc.y);
+                
+                // Patrol behavior
+                const target = npc.schedule.patrol[npc.schedule.current];
+                const patrolDist = Math.hypot(target.x - npc.x, target.y - npc.y);
+                
+                if (patrolDist < 10) {
+                    npc.schedule.current = (npc.schedule.current + 1) % npc.schedule.patrol.length;
+                } else {
+                    const angle = Math.atan2(target.y - npc.y, target.x - npc.x);
+                    npc.x += Math.cos(angle) * 1;
+                    npc.y += Math.sin(angle) * 1;
+                }
+                
+                // Faction territory conflicts
+                for (let other of npcs) {
+                    if (other === npc || !other.alive) continue;
+                    if (other.faction !== npc.faction) {
+                        const otherDist = Math.hypot(other.x - npc.x, other.y - npc.y);
+                        if (otherDist < 50 && Math.random() < 0.001) {
+                            // Faction fight
+                            other.health -= 10;
+                            if (other.health <= 0) other.alive = false;
+                        }
+                    }
+                }
+            }
+            
+            // Health check
+            if (player.health <= 0) {
+                die(player.radiation > 80 ? "Acute Radiation Syndrome" : 
+                    player.hunger > 90 ? "Starvation" : "Killed in the Zone");
+            }
+            
+            // Update UI
+            updateUI();
+            
+            // Generate particles
+            if (Math.random() < 0.1) {
+                particles.push({
+                    x: player.x + (Math.random() - 0.5) * 200,
+                    y: player.y + (Math.random() - 0.5) * 200,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: -0.5 - Math.random(),
+                    life: 100 + Math.random() * 100,
+                    size: 1 + Math.random() * 2
+                });
+            }
+            
+            // Update particles
+            particles = particles.filter(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+                return p.life > 0;
+            });
+        }
+        
+        function throwBolt() {
+            if (player.bolts <= 0) {
+                addMessage("No bolts remaining!", "warning");
+                return;
+            }
+            player.bolts--;
+            
+            // Check if bolt hits anomaly
+            for (let anomaly of anomalies) {
+                const dist = Math.hypot(player.x - anomaly.x, player.y - anomaly.y);
+                if (dist < anomaly.radius + 50) {
+                    anomaly.active = !anomaly.active;
+                    addMessage("Bolt triggered " + anomaly.type + " anomaly!", "info");
+                    
+                    // Create visual effect
+                    for (let i = 0; i < 10; i++) {
+                        particles.push({
+                            x: anomaly.x,
+                            y: anomaly.y,
+                            vx: (Math.random() - 0.5) * 5,
+                            vy: (Math.random() - 0.5) * 5,
+                            life: 30,
+                            size: 3,
+                            color: '#ff6600'
+                        });
+                    }
+                }
+            }
+        }
+        
+        function interact() {
+            // Check for nearby loot stashes
+            for (let stash of lootStashes) {
+                const dist = Math.hypot(player.x - stash.x, player.y - stash.y);
+                if (dist < 50 && !stash.discovered) {
+                    stash.discovered = true;
+                    addMessage("Found stash: " + stash.items.map(i => i.name).join(", "), "success");
+                    for (let item of stash.items) {
+                        addToInventory(item);
+                    }
+                }
+            }
+            
+            // Check for artifacts
+            for (let i = artifacts.length - 1; i >= 0; i--) {
+                const art = artifacts[i];
+                const dist = Math.hypot(player.x - art.x, player.y - art.y);
+                if (dist < 40) {
+                    addToInventory({
+                        type: 'artifact',
+                        name: art.name,
+                        icon: '💎',
+                        weight: 0.5,
+                        value: art.value,
+                        radiation: 5
+                    });
+                    addMessage("Retrieved " + art.name + " artifact!", "success");
+                    artifacts.splice(i, 1);
+                }
+            }
+            
+            // Check for NPCs
+            for (let npc of npcs) {
+                if (!npc.alive) continue;
+                const dist = Math.hypot(player.x - npc.x, player.y - npc.y);
+                if (dist < 60) {
+                    startDialogue(npc);
+                }
+            }
+        }
+        
+        function shoot() {
+            if (!player.equipment.weapon) {
+                addMessage("No weapon equipped!", "warning");
+                return;
+            }
+            
+            const weapon = player.equipment.weapon;
+            const ammoType = weapon.ammo;
+            
+            if (player.ammo[ammoType] <= 0) {
+                addMessage("Out of ammo!", "warning");
+                return;
+            }
+            
+            player.ammo[ammoType]--;
+            
+            // Raycast for hit detection
+            const range = 300;
+            const hitX = player.x + Math.cos(player.angle) * range;
+            const hitY = player.y + Math.sin(player.angle) * range;
+            
+            // Check mutant hits
+            for (let mutant of mutants) {
+                const dist = Math.hypot(player.x - mutant.x, player.y - mutant.y);
+                if (dist < range) {
+                    const angleToMutant = Math.atan2(mutant.y - player.y, mutant.x - player.x);
+                    const angleDiff = Math.abs(player.angle - angleToMutant);
+                    if (angleDiff < 0.2 || angleDiff > Math.PI * 2 - 0.2) {
+                        mutant.health -= 25;
+                        addMessage("Hit " + mutant.type + "!", "info");
+                        if (mutant.health <= 0) {
+                            addMessage("Killed " + mutant.type + "!", "success");
+                        }
+                    }
+                }
+            }
+            
+            // Muzzle flash particle
+            particles.push({
+                x: player.x + Math.cos(player.angle) * 20,
+                y: player.y + Math.sin(player.angle) * 20,
+                vx: 0,
+                vy: 0,
+                life: 5,
+                size: 15,
+                color: '#ffff00'
+            });
+        }
+        
+        function addToInventory(item) {
+            if (player.weight + item.weight > player.maxWeight) {
+                addMessage("Overencumbered!", "warning");
+                return;
+            }
+            player.inventory.push(item);
+            updateWeight();
+        }
+        
+        function updateWeight() {
+            player.weight = player.inventory.reduce((sum, item) => sum + item.weight, 0);
+            document.getElementById('weight').textContent = player.weight.toFixed(1);
+        }
+        
+        function die(cause) {
+            gameRunning = false;
+            document.getElementById('death-cause').textContent = cause;
+            document.getElementById('death-screen').style.display = 'flex';
+        }
+        
+        function restartGame() {
+            player.health = 100;
+            player.radiation = 0;
+            player.hunger = 0;
+            player.stamina = 100;
+            player.x = WORLD_SIZE / 2;
+            player.y = WORLD_SIZE / 2;
+            player.inventory = [];
+            
+            // Reset world
+            anomalies = [];
+            artifacts = [];
+            npcs = [];
+            mutants = [];
+            structures = [];
+            lootStashes = [];
+            radiationZones = [];
+            
+            initWorld();
+            gameRunning = true;
+            document.getElementById('death-screen').style.display = 'none';
+        }
+        
+        // ==================== RENDERING ====================
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Save context for camera transform
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+            
+            // Draw ground (grid pattern)
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 1;
+            for (let x = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE; x < camera.x + canvas.width; x += TILE_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(x, camera.y);
+                ctx.lineTo(x, camera.y + canvas.height);
+                ctx.stroke();
+            }
+            for (let y = Math.floor(camera.y / TILE_SIZE) * TILE_SIZE; y < camera.y + canvas.height; y += TILE_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(camera.x, y);
+                ctx.lineTo(camera.x + canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Draw radiation zones (subtle green glow)
+            for (let zone of radiationZones) {
+                const screenX = zone.x - camera.x;
+                const screenY = zone.y - camera.y;
+                if (screenX < -zone.radius || screenX > canvas.width + zone.radius ||
+                    screenY < -zone.radius || screenY > canvas.height + zone.radius) continue;
+                
+                const gradient = ctx.createRadialGradient(zone.x, zone.y, 0, zone.x, zone.y, zone.radius);
+                gradient.addColorStop(0, `rgba(57, 255, 20, ${zone.intensity * 0.1})`);
+                gradient.addColorStop(1, 'rgba(57, 255, 20, 0)');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(zone.x - zone.radius, zone.y - zone.radius, zone.radius * 2, zone.radius * 2);
+            }
+            
+            // Draw structures
+            for (let struct of structures) {
+                ctx.fillStyle = '#3a3a3a';
+                ctx.fillRect(struct.x, struct.y, struct.width, struct.height);
+                ctx.strokeStyle = '#555';
+                ctx.strokeRect(struct.x, struct.y, struct.width, struct.height);
+                
+                // Structure details based on type
+                ctx.fillStyle = '#2a2a2a';
+                if (struct.type === 'house') {
+                    // Roof
+                    ctx.beginPath();
+                    ctx.moveTo(struct.x, struct.y);
+                    ctx.lineTo(struct.x + struct.width / 2, struct.y - 20);
+                    ctx.lineTo(struct.x + struct.width, struct.y);
+                    ctx.fill();
+                } else if (struct.type === 'watchtower') {
+                    // Tower legs
+                    ctx.fillStyle = '#4a4a4a';
+                    ctx.fillRect(struct.x + 5, struct.y + 20, 5, struct.height - 20);
+                    ctx.fillRect(struct.x + struct.width - 10, struct.y + 20, 5, struct.height - 20);
+                }
+            }
+            
+            // Draw anomalies
+            for (let anomaly of anomalies) {
+                if (!anomaly.active) continue;
+                
+                const time = Date.now() / 1000;
+                const pulse = Math.sin(time * 2) * 0.3 + 0.7;
+                
+                ctx.beginPath();
+                ctx.arc(anomaly.x, anomaly.y, anomaly.radius * pulse, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 100, 0, 0.1)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 100, 0, 0.3)';
+                ctx.stroke();
+                
+                // Anomaly center glow
+                const gradient = ctx.createRadialGradient(anomaly.x, anomaly.y, 0, anomaly.x, anomaly.y, 20);
+                gradient.addColorStop(0, 'rgba(255, 200, 0, 0.8)');
+                gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(anomaly.x, anomaly.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw artifacts
+            for (let art of artifacts) {
+                ctx.fillStyle = '#00ffff';
+                ctx.beginPath();
+                ctx.arc(art.x, art.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Glow
+                const gradient = ctx.createRadialGradient(art.x, art.y, 0, art.x, art.y, 20);
+                gradient.addColorStop(0, 'rgba(0, 255, 255, 0.4)');
+                gradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(art.x, art.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw loot stashes
+            for (let stash of lootStashes) {
+                if (!stash.discovered) {
+                    ctx.fillStyle = '#666';
+                    ctx.fillRect(stash.x - 10, stash.y - 10, 20, 20);
+                    ctx.strokeStyle = '#888';
+                    ctx.strokeRect(stash.x - 10, stash.y - 10, 20, 20);
+                }
+            }
+            
+            // Draw NPCs
+            for (let npc of npcs) {
+                if (!npc.alive) continue;
+                
+                const color = factionColors[npc.faction] || '#888';
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.arc(npc.x, npc.y, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Direction indicator
+                ctx.strokeStyle = color;
+                ctx.beginPath();
+                ctx.moveTo(npc.x, npc.y);
+                ctx.lineTo(npc.x + Math.cos(npc.angle || 0) * 20, npc.y + Math.sin(npc.angle || 0) * 20);
+                ctx.stroke();
+                
+                // Name tag
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(npc.name, npc.x, npc.y - 20);
+            }
+            
+            // Draw mutants
+            for (let mutant of mutants) {
+                if (mutant.health <= 0) continue;
+                
+                const color = mutant.active ? '#ff0000' : '#8b0000';
+                ctx.fillStyle = color;
+                
+                // Draw based on type
+                if (mutant.type === 'blind_dog') {
+                    ctx.beginPath();
+                    ctx.arc(mutant.x, mutant.y, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                    // Ears
+                    ctx.beginPath();
+                    ctx.moveTo(mutant.x - 12, mutant.y - 5);
+                    ctx.lineTo(mutant.x - 15, mutant.y - 15);
+                    ctx.lineTo(mutant.x - 5, mutant.y - 8);
+                    ctx.fill();
+                } else if (mutant.type === 'controller') {
+                    // Humanoid shape
+                    ctx.fillRect(mutant.x - 8, mutant.y - 15, 16, 30);
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.beginPath();
+                    ctx.arc(mutant.x, mutant.y - 20, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(mutant.x, mutant.y, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // Health bar
+                if (mutant.health < 100) {
+                    ctx.fillStyle = '#000';
+                    ctx.fillRect(mutant.x - 15, mutant.y - 30, 30, 4);
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(mutant.x - 15, mutant.y - 30, 30 * (mutant.health / 100), 4);
+                }
+            }
+            
+            // Draw particles
+            for (let p of particles) {
+                ctx.fillStyle = p.color || 'rgba(200, 200, 200, 0.5)';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            // Draw player
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            ctx.rotate(player.angle);
+            
+            // Body
+            ctx.fillStyle = '#4a4a4a';
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Direction indicator (weapon)
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(25, 0);
+            ctx.stroke();
+            
+            // Flashlight cone
+            if (player.flashlight) {
+                ctx.fillStyle = 'rgba(255, 255, 200, 0.15)';
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, 150, -0.3, 0.3);
+                ctx.fill();
+            }
+            
+            ctx.restore();
+            
+            // Draw bolt trajectory if recently thrown
+            // (Visual effect handled in particles)
+            
+            ctx.restore();
+            
+            // Lighting overlay (day/night cycle)
+            const isNight = gameTime < 6 * 60 || gameTime > 20 * 60;
+            const nightAlpha = isNight ? 0.7 : 0;
+            const dawnDusk = (gameTime > 5 * 60 && gameTime < 7 * 60) || (gameTime > 19 * 60 && gameTime < 21 * 60);
+            const alpha = nightAlpha + (dawnDusk ? 0.3 : 0);
+            
+            if (alpha > 0) {
+                ctx.fillStyle = `rgba(0, 0, 10, ${alpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Flashlight cutout
+                if (player.flashlight) {
+                    const screenX = player.x - camera.x;
+                    const screenY = player.y - camera.y;
+                    
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY, 150, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.clearRect(screenX - 150, screenY - 150, 300, 300);
+                    ctx.restore();
+                }
+            }
+            
+            // Geiger counter visualization
+            const radLevel = player.radiation / 100;
+            if (radLevel > 0.1) {
+                const clickRate = Math.max(100, 2000 - radLevel * 1900);
+                if (Math.random() < 1 / clickRate * 16) {
+                    ctx.fillStyle = 'rgba(57, 255, 20, 0.3)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+        }
+        
+        function updateUI() {
+            // Update bars
+            document.getElementById('health-bar').style.width = (player.health / player.maxHealth * 100) + '%';
+            document.getElementById('rad-bar').style.width = player.radiation + '%';
+            document.getElementById('hunger-bar').style.width = player.hunger + '%';
+            document.getElementById('stamina-bar').style.width = (player.stamina / player.maxStamina * 100) + '%';
+            
+            // Update text
+            const hours = Math.floor(gameTime / 60);
+            const mins = Math.floor(gameTime % 60);
+            document.getElementById('time-display').textContent = 
+                `Day ${dayCount} - ${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+            
+            // Geiger counter
+            const rad = calculateRadiation();
+            document.getElementById('geiger-counter').textContent = rad.toFixed(2) + ' μSv';
+            
+            // Compass
+            const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const dirIndex = Math.round((player.angle + Math.PI) / (Math.PI / 4)) % 8;
+            document.getElementById('compass').textContent = dirs[dirIndex];
+            
+            // Anomaly warning
+            let nearAnomaly = false;
+            for (let a of anomalies) {
+                if (Math.hypot(player.x - a.x, player.y - a.y) < a.radius + 50) {
+                    nearAnomaly = true;
+                    break;
+                }
+            }
+            document.getElementById('anomaly-warning').style.display = nearAnomaly ? 'block' : 'none';
+            
+            // Faction indicator
+            document.getElementById('faction-indicator').textContent = player.faction.charAt(0).toUpperCase() + player.faction.slice(1);
+            document.getElementById('faction-indicator').style.borderColor = factionColors[player.faction];
+            document.getElementById('faction-indicator').style.color = factionColors[player.faction];
+            
+            // Equipment
+            document.getElementById('weapon-name').textContent = player.equipment.weapon ? player.equipment.weapon.name : 'None';
+            document.getElementById('armor-name').textContent = player.equipment.armor ? player.equipment.armor.name : 'None';
+        }
+        
+        function calculateRadiation() {
+            let total = 0.05; // Background
+            for (let zone of radiationZones) {
+                const dist = Math.hypot(player.x - zone.x, player.y - zone.y);
+                if (dist < zone.radius) {
+                    total += zone.intensity * 10 * (1 - dist / zone.radius);
+                }
+            }
+            // Artifacts emit radiation
+            for (let item of player.inventory) {
+                if (item.type === 'artifact') {
+                    total += item.radiation || 0;
+                }
+            }
+            return total;
+        }
+        
+        // ==================== UI FUNCTIONS ====================
+        let inventoryOpen = false;
+        let pdaOpen = false;
+        
+        function toggleInventory() {
+            inventoryOpen = !inventoryOpen;
+            document.getElementById('inventory').style.display = inventoryOpen ? 'grid' : 'none';
+            if (inventoryOpen) renderInventory();
+        }
+        
+        function renderInventory() {
+            const grid = document.getElementById('item-grid');
+            grid.innerHTML = '';
+            
+            for (let item of player.inventory) {
+                const slot = document.createElement('div');
+                slot.className = 'item-slot';
+                slot.innerHTML = `${item.icon}<span class="item-count">${item.count || 1}</span>`;
+                slot.title = item.name;
+                slot.onclick = () => showItemInfo(item);
+                grid.appendChild(slot);
+            }
+        }
+        
+        function showItemInfo(item) {
+            const info = document.getElementById('item-info');
+            let html = `<strong style="color: #fff;">${item.name}</strong><br><br>`;
+            html += `Type: ${item.type}<br>`;
+            html += `Weight: ${item.weight} kg<br>`;
+            if (item.value) html += `Value: ${item.value} RU<br>`;
+            if (item.condition) html += `Condition: ${item.condition}%<br>`;
+            if (item.radiation) html += `<span style="color: #39ff14;">Radiation: +${item.radiation} μSv</span><br>`;
+            if (item.hunger) html += `Hunger: -${item.hunger}<br>`;
+            if (item.heal) html += `Healing: +${item.heal} HP<br>`;
+            if (item.protection) html += `Protection: ${item.protection}<br>`;
+            
+            html += `<br><button class="btn" style="padding: 5px 15px; font-size: 12px;" onclick="useItem('${item.name}')">Use</button>`;
+            if (item.type === 'weapon' || item.type === 'armor') {
+                html += ` <button class="btn" style="padding: 5px 15px; font-size: 12px;" onclick="equipItem('${item.name}')">Equip</button>`;
+            }
+            html += ` <button class="btn" style="padding: 5px 15px; font-size: 12px;" onclick="dropItem('${item.name}')">Drop</button>`;
+            
+            info.innerHTML = html;
+        }
+        
+        function useItem(name) {
+            const idx = player.inventory.findIndex(i => i.name === name);
+            if (idx === -1) return;
+            const item = player.inventory[idx];
+            
+            if (item.type === 'consumable') {
+                if (item.hunger) player.hunger = Math.max(0, player.hunger - item.hunger);
+                if (item.radiation) player.radiation = Math.max(0, player.radiation + item.radiation);
+                player.inventory.splice(idx, 1);
+                addMessage(`Consumed ${item.name}`, "success");
+            } else if (item.type === 'medical') {
+                if (item.heal) player.health = Math.min(player.maxHealth, player.health + item.heal);
+                player.inventory.splice(idx, 1);
+                addMessage(`Used ${item.name}`, "success");
+            }
+            updateWeight();
+            renderInventory();
+        }
+        
+        function equipItem(name) {
+            const item = player.inventory.find(i => i.name === name);
+            if (!item) return;
+            
+            if (item.type === 'weapon') {
+                player.equipment.weapon = item;
+                addMessage(`Equipped ${item.name}`, "success");
+            } else if (item.type === 'armor') {
+                player.equipment.armor = item;
+                addMessage(`Equipped ${item.name}`, "success");
+            }
+            updateUI();
+        }
+        
+        function dropItem(name) {
+            const idx = player.inventory.findIndex(i => i.name === name);
+            if (idx !== -1) {
+                player.inventory.splice(idx, 1);
+                updateWeight();
+                renderInventory();
+                addMessage(`Dropped ${name}`, "info");
+            }
+        }
+        
+        function togglePDA() {
+            pdaOpen = !pdaOpen;
+            document.getElementById('pda').style.display = pdaOpen ? 'block' : 'none';
+            if (pdaOpen) showPdaTab('quests');
+        }
+        
+        function showPdaTab(tab) {
+            const content = document.getElementById('pda-content');
+            if (tab === 'quests') {
+                content.innerHTML = `
+                    <div style="color: #39ff14; margin-bottom: 15px;">Active Quests</div>
+                    <div class="quest-item">
+                        <div style="color: #fff; margin-bottom: 5px;">Find the Truth</div>
+                        <div style="font-size: 12px; color: #aaa;">Investigate the strange emissions coming from the center of the Zone.</div>
+                    </div>
+                    <div class="quest-item">
+                        <div style="color: #fff; margin-bottom: 5px;">Artifact Hunt</div>
+                        <div style="font-size: 12px; color: #aaa;">Bring Sidorovich 3 Night Star artifacts.</div>
+                    </div>
+                    <div style="color: #39ff14; margin: 15px 0;">Completed Quests</div>
+                    <div style="color: #666; font-size: 12px;">None yet. Survive, stalker.</div>
+                `;
+            } else if (tab === 'map') {
+                content.innerHTML = `
+                    <div style="color: #39ff14; margin-bottom: 15px;">Zone Map</div>
+                    <div style="width: 100%; height: 300px; border: 1px solid #39ff14; position: relative; background: rgba(0, 20, 0, 0.3);">
+                        <div style="position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: #fff; border-radius: 50%; transform: translate(-50%, -50%);"></div>
+                        <div style="position: absolute; bottom: 10px; right: 10px; font-size: 10px; color: #39ff14;">You are here</div>
+                    </div>
+                `;
+            } else if (tab === 'factions') {
+                let html = '<div style="color: #39ff14; margin-bottom: 15px;">Faction Relations</div>';
+                for (let [faction, rep] of Object.entries(player.reputation)) {
+                    const color = rep > 0 ? '#00ff00' : rep < 0 ? '#ff0000' : '#888';
+                    html += `<div style="margin: 8px 0; color: ${color};">${faction}: ${rep > 0 ? '+' : ''}${rep}</div>`;
+                }
+                content.innerHTML = html;
+            } else if (tab === 'encyclopedia') {
+                content.innerHTML = `
+                    <div style="color: #39ff14; margin-bottom: 15px;">Zone Encyclopedia</div>
+                    <div style="color: #aaa; font-size: 12px; line-height: 1.6;">
+                        <strong style="color: #fff;">Anomalies:</strong><br>
+                        Spring - Gravitational anomaly. Throws objects and people into the air.<br><br>
+                        Vortex - Deadly gravitational trap. Instantly kills upon contact.<br><br>
+                        Burner - Thermal anomaly. Emits intense heat waves.<br><br>
+                        Meatgrinder - Cutting anomaly. Shreds anything that enters.<br><br>
+                        <strong style="color: #fff;">Artifacts:</strong><br>
+                        Stone Blood - Common artifact. Slightly increases wound healing.<br><br>
+                        Night Star - Rare artifact. Emits soft light, reduces bleeding.<br><br>
+                        Mama's Beads - Very rare. Significantly increases bullet resistance.<br><br>
+                        Soul - Legendary artifact. Unknown properties.
+                    </div>
+                `;
+            }
+        }
+        
+        function startDialogue(npc) {
+            const dialogue = document.getElementById('dialogue');
+            const text = document.getElementById('dialogue-text');
+            const options = document.getElementById('dialogue-options');
+            
+            dialogue.style.display = 'block';
+            text.textContent = npc.dialogues[Math.floor(Math.random() * npc.dialogues.length)];
+            
+            options.innerHTML = '';
+            
+            const opts = [
+                { text: "Got anything to trade?", action: () => trade(npc) },
+                { text: "Any news from the Zone?", action: () => addMessage("NPC: Watch out for emissions tonight.", "info") },
+                { text: "Goodbye", action: () => dialogue.style.display = 'none' }
+            ];
+            
+            if (npc.attitude === 'hostile') {
+                opts.unshift({ text: "Don't shoot! I'm friendly!", action: () => {
+                    if (Math.random() < 0.3) {
+                        npc.attitude = 'neutral';
+                        addMessage(npc.name + " lowered their weapon.", "success");
+                    } else {
+                        addMessage(npc.name + " opens fire!", "danger");
+                        player.health -= 10;
+                    }
+                    dialogue.style.display = 'none';
+                }});
+            }
+            
+            for (let opt of opts) {
+                const btn = document.createElement('div');
+                btn.className = 'dialogue-option';
+                btn.textContent = opt.text;
+                btn.onclick = opt.action;
+                options.appendChild(btn);
+            }
+        }
+        
+        function trade(npc) {
+            addMessage("Trading interface would open here.", "info");
+            document.getElementById('dialogue').style.display = 'none';
+        }
+        
+        function addMessage(text, type) {
+            const log = document.getElementById('message-log');
+            const msg = document.createElement('div');
+            msg.className = 'message';
+            
+            const colors = {
+                info: '#888',
+                warning: '#ff8800',
+                danger: '#ff0000',
+                success: '#00ff00'
+            };
+            
+            msg.style.borderLeftColor = colors[type] || '#555';
+            msg.style.color = colors[type] || '#888';
+            msg.textContent = text;
+            
+            log.appendChild(msg);
+            log.scrollTop = log.scrollHeight;
+            
+            // Limit messages
+            while (log.children.length > 10) {
+                log.removeChild(log.firstChild);
+            }
+        }
+        
+        // ==================== GAME LOOP ====================
+        function gameLoop(timestamp) {
+            const dt = timestamp - lastTime;
+            lastTime = timestamp;
+            
+            update(dt / 16); // Normalize to ~60fps
+            draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            initWorld();
+            gameRunning = true;
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+            addMessage("Welcome to the Zone, stalker.", "info");
+            addMessage("Find artifacts, survive anomalies, uncover the truth.", "info");
+        }
+        
+        // Initialize
+        document.getElementById('start-screen').style.display = 'flex';
+    </script>
+</body>
+</html>
